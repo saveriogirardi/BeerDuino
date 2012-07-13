@@ -32,8 +32,13 @@
 
 #include <SD.h>
 
+//the CS pin on the ethernet shield is 4.
+//we will connect the sensor on digital input 0
 const int chipSelect = 4;
 const int IRgate = 0;
+
+//we define the log period in milliseconds. In this case we log every minute.
+const int logPeriod = 60000;
 
 int bubbles = 0;
 
@@ -44,6 +49,7 @@ void setup()
   
   pinMode(10, OUTPUT);
   
+  //check if the SD i ready to work and initialize the library
   if(!SD.begin(chipSelect))
   {
     Serial.println("failed! Try to fix the card or the connection.");
@@ -51,7 +57,10 @@ void setup()
   }
   Serial.println("done. Card is ready, writing the header for the file...");
   
+  //try to open the file on the card. If this does not exist it will create it
   File DataFile = SD.open("bubbles.txt",FILE_WRITE);
+
+  //If the file is ready the programm will write an header to it to distinguish the three columns
   if(DataFile)
   {
     String header = "Time  Temp  Bubbles";
@@ -60,16 +69,21 @@ void setup()
     Serial.println("Header successfully written in format:");
     Serial.println(header);
   }
+  //otherwise it serial print the error
   else
   {
      Serial.println("Couldn't open the file!");
+     return;
   }
   
 }
 
+//after the setup is complete and if there are no errors the program begins to log
+
 void loop()
 {  
-  if((millis()%60000) == 0 && (millis()/60000) >= 1)
+  //Every minute from the beginning of the program we write the data to the SD card and set the bubble variable to zero
+  if((millis()%logPeriod) == 0 && (millis()/logPeriod) >= 1)
   {
     File DataFile = SD.open("bubbles.txt", FILE_WRITE);
     
@@ -85,9 +99,12 @@ void loop()
     else
     {
       Serial.println("Couldn't access file");
+      return;
     }
     bubbles = 0;
   }
+  //when not writing to the SD we wait for the bubbles and each time we see one we sum her to the bubble variable. 
+  //In this way we have a cumulative count until the variable is emptied every minute.
   else
   {
     int bubbleEvent = digitalRead(IRgate);
@@ -100,7 +117,7 @@ void loop()
 
 }
 
-
+/*If you want to log faster or slower you just have to modify the logPeriod constant.
 
 
 
