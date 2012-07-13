@@ -117,7 +117,7 @@ void loop()
 
 }
 
-/*If you want to log faster or slower you just have to modify the logPeriod constant.
+//If you want to log faster or slower you just have to modify the logPeriod constant.
 
 
 
