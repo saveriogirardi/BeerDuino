@@ -1,3 +1,0 @@
-git add "nomefile"
-git commit -m 'commento'
-git push
