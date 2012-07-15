@@ -182,13 +182,23 @@ void loop()
     Whole = Tc_100 / 100;  // separate off the whole and fractional portions
     Fract = Tc_100 % 100;
     
+    String sign;
+    int decimal;
+    
+    if (SignBit){ sign = "-"; }
+    else { sign = "+"; }
+    if (Fract < 10){ decimal = 0; }
+    else { decimal = Fract; }
+    
+    String tempString = String(sign) + String(Whole) + "." + String(decimal); //build the string with the temperature to be written on file
+    
     //we can now write the data on the Sd
     if(DataFile)
     {      
-      String data = String(millis()) + ",  " + "Temp" + ",  " + "bubbles";
+      String data = String(millis()) + ",  " + tempString + ",  " + "bubbles"; //print the ACTUAL time elapsed that is much later than when we begin the conversion.
       DataFile.println(data);
       DataFile.close();
-      String success = "Data at time " + String(millis()/60000) + " written on SD card";
+      String success = "Data at time " + String(millis()) + " written on SD card";
       Serial.println(success);
       Serial.println("Next log within" + String(logPeriod/1000) + "seconds...");
       digitalWrite(RedLed, HIGH);
