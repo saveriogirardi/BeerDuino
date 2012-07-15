@@ -10,6 +10,9 @@ The circuit:
 ** + pin to +5 V pin
 ** S pin to pin 5
 
+We initialize the comunication with the sensor in the setup function so we will have a faster read 
+in the loop function. This is due to the relatively slow onewire comunication protocol.
+
 created 14 Lug 2012
 by Saverio Girardi
 www.opensourceideas.it
@@ -35,6 +38,8 @@ const int RedLed = 6;
 const int logPeriod = 60000;
 
 OneWire dsTemp(5); //we generate the one wire object and define the pin to comunicate with.
+byte tempAd[8];
+int foundTemp = 0;
 
 void setup()
 {
@@ -81,13 +86,38 @@ void setup()
      return;
   }
   
+  //Once the sd is ready we have to check if Arduino recognise the sensor. We first ask him and store his adress:
+  Serial.println("Searching the temperature sensor...");
+  
+  foundTemp = dsTemp.search(tempAd);
+  delay(250); //allows the searc() function to end the comunication with the sensor before reading the adress
+  if(foundTemp)
+  {
+    int i = 0;
+    Serial.print("Found a sensor with adress ");
+    for(i=0; i <= 7; i++) //print the adress
+    {
+      Serial.print(tempAd[i]);
+    }
+    Serial.println(" ");
+    digitalWrite(RedLed, LOW);
+    digitalWrite(GreenLed, HIGH);
+  }
+  if(!foundTemp)
+  {
+    Serial.println("Sensor not found!");
+    digitalWrite(RedLed, HIGH);
+    digitalWrite(GreenLed, LOW);
+    return;  //if we don't find the sensor the program exits
+  }
+  
 }
 
 //after the setup is complete and if there are no errors the program begins to log
 
 void loop()
 {  
-  //Every minute from the beginning of the program we write the data to the SD card.
+  //Every minute from the beginning of the program we mesure the temperature and write the data on the SD card.
   if((millis()%logPeriod) == 0 && (millis()/logPeriod) >= 1)
   {
     File DataFile = SD.open("bubbles.txt", FILE_WRITE);
