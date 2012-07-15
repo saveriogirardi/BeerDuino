@@ -29,7 +29,6 @@ ATTENTION!! This is a NON VERIFIED code, I'm working on it. Use at your own risk
 //the CS pin on the ethernet shield is 4.
 //we will connect the sensor on digital input 5
 const int chipSelect = 4;
-const int tempSens = 5;
 
 const int GreenLed = 7;
 const int RedLed = 6;
@@ -39,6 +38,7 @@ const int logPeriod = 60000;
 
 OneWire dsTemp(5); //we generate the one wire object and define the pin to comunicate with.
 byte tempAd[8];
+byte temperature[8];
 int foundTemp = 0;
 
 void setup()
@@ -136,28 +136,55 @@ void setup()
 
 void loop()
 {  
+  //we declare the variables needed for the conversion of the temperature
+  int HighByte, LowByte, TReading, SignBit, Tc_100, Whole, Fract;
+
   byte present = 0;
+  int i = 0;
   
   //Every minute from the beginning of the program we mesure the temperature and write the data on the SD card.
   if((millis()%logPeriod) == 0 && (millis()/logPeriod) >= 1)
   {
     File DataFile = SD.open("bubbles.txt", FILE_WRITE);
+    
+    //we tell the sensor to begin the conversion of the actual temperature:
+    dsTemp.reset();
+    dsTemp.select(tempAd);
+    dsTemp.write(0x44); //start the conversion and power it externally so we do not need to use the parassitic power option
+      
+    delay(1000); //wait a second to let the comunication to take place
+      
+    present = dsTemp.reset();
+    dsTemp.select(tempAd);    
+    dsTemp.write(0xBE); //now we ask the sensor to send us the temperature datas...
+    
+    for ( i = 0; i < 9; i++) {           //we reed the answer of the sensor and store the data in the temperature vector
+      temperature[i] = dsTemp.read();
+      Serial.print(temperature[i], HEX);
+      Serial.print(" ");
+    }
      
-    if(DataFile)
+    //Now we have the temperature but in a format difficult to be processed. To convert it in a more 
+    //friendly format we use the small algorithm that you can find at the official Arduino page of the 
+    //library at http://www.arduino.cc/playground/Learning/OneWire . I've slightly modified it  to adapt 
+    // at the purpose of this code. 
+    
+    LowByte = temperature[0];
+    HighByte = temperature[1];
+    TReading = (HighByte << 8) + LowByte;
+    SignBit = TReading & 0x8000;  // test most sig bit
+    if (SignBit) // negative
     {
-      //we tell the sensor to begin the conversion of the actual temperature:
-      dsTemp.reset();
-      dsTemp.select(tempAd);
-      dsTemp.write(0x44); //we power the sensor externally so we do not need to use the parassitic power option
-      
-      delay(1000); //wait a second to let the comunication to take place
-      
-      present = dsTemp.reset();
-      dsTemp.select(tempAd);    
-      dsTemp.write(0xBE);
-      
-      //programmation interrupted here START INSERTING READING DATA....
-      
+      TReading = (TReading ^ 0xffff) + 1; // 2's comp
+    }
+    Tc_100 = (6 * TReading) + TReading / 4;    // multiply by (100 * 0.0625) or 6.25
+
+    Whole = Tc_100 / 100;  // separate off the whole and fractional portions
+    Fract = Tc_100 % 100;
+    
+    //we can now write the data on the Sd
+    if(DataFile)
+    {      
       String data = String(millis()) + ",  " + "Temp" + ",  " + "bubbles";
       DataFile.println(data);
       DataFile.close();
