@@ -110,21 +110,53 @@ void setup()
     digitalWrite(GreenLed, LOW);
     return;  //if we don't find the sensor the program exits
   }
+  //We check if the sensor belongs to the DS18S20 family because otherwise the library will not work
+  if (tempAd[0] != 0x10) 
+  {
+    Serial.println("Temperature sensor is not a DS18S20 family device.");
+    digitalWrite(RedLed, HIGH);
+    digitalWrite(GreenLed, LOW);
+    return;
+  }
+  //we finally perform a CRC check to verify the integrity of the data. note that CRC stands for 
+  //Cyclic Redundancy Check.
+  if(OneWire::crc8( tempAd, 7) != tempAd[7]) 
+  {
+    Serial.println("CRC is not valid!");
+    digitalWrite(RedLed, HIGH);
+    digitalWrite(GreenLed, LOW);
+    return;
+  }
   
+  //if everithing is working our Sd card is ready as the sensor and we have the adress stored in tempAd variable.
+  //we are ready to roll!
 }
 
-//after the setup is complete and if there are no errors the program begins to log
+//The program begins to log
 
 void loop()
 {  
+  byte present = 0;
+  
   //Every minute from the beginning of the program we mesure the temperature and write the data on the SD card.
   if((millis()%logPeriod) == 0 && (millis()/logPeriod) >= 1)
   {
     File DataFile = SD.open("bubbles.txt", FILE_WRITE);
-    
+     
     if(DataFile)
     {
+      //we tell the sensor to begin the conversion of the actual temperature:
+      dsTemp.reset();
+      dsTemp.select(tempAd);
+      dsTemp.write(0x44); //we power the sensor externally so we do not need to use the parassitic power option
       
+      delay(1000); //wait a second to let the comunication to take place
+      
+      present = dsTemp.reset();
+      dsTemp.select(tempAd);    
+      dsTemp.write(0xBE);
+      
+      //programmation interrupted here START INSERTING READING DATA....
       
       String data = String(millis()) + ",  " + "Temp" + ",  " + "bubbles";
       DataFile.println(data);
