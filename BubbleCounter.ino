@@ -121,7 +121,7 @@ void loop()
       digitalWrite(GreenLed, LOW);
       return;
     }
-    bubbles = 0;
+    bubbles = 0; //after writing the data to the SD we set the bubble variable to 0 to begin a new time count
   }
   //when not writing to the SD we wait for the bubbles and each time we see one we sum her to the bubble variable. 
   //In this way we have a cumulative count until the variable is emptied every minute.

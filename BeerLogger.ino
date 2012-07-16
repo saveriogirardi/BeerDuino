@@ -1,19 +1,42 @@
 /*
 This program identifies and read the temperature from a DS18B20 temperature sensor and stores the 
-value in a microSD cars using the ethernet shield.
+value in a microSD cars using the ethernet shield. Between two temperature measure he counts the bubbles 
+exiting from the airlock and sum the value for a logPeriod time interval
 
 You can find a cheap and preinterfaced DS18B20 chips at 
 http://www.dealextreme.com/p/ds18b20-digital-temperature-sensor-module-for-arduino-55-125-c-135047?item=8
 
+The leds are use to monitor the proper function of the program when not connected to a serial monitor.
+ 
+The bubble sensor is an IR photogate. You can buy a suitable and cheap one on dealextreme at URL:
+http://www.dealextreme.com/p/infrared-light-beam-photoelectric-sensor-module-140554?item=14
+
 The circuit:
+
+--------Temperature sensor
 ** - pin on GND pin
 ** + pin to +5 V pin
 ** S pin to pin 5
 
+--------Ir photogate
+The two 5V and GND pins have to be connected to the correspondent outs on the board. The OUT pin have to be connected 
+ on digital pin 8.
+
+--------Leds
+** Red LED in series with a 500 Ohm from Digital pin 6 to GND
+** Green LED in series with a 500 Ohm from Digital pin 7 to GND
+
+--------SD card attached to SPI bus as follows:
+** MOSI - pin 11
+** MISO - pin 12
+** CLK - pin 13
+** CS - pin 4
+---> using the ethernet shield
+
 We initialize the comunication with the sensor in the setup function so we will have a faster read 
 in the loop function. This is due to the relatively slow onewire comunication protocol.
 
-created 14 Lug 2012
+created 16 Lug 2012
 by Saverio Girardi
 www.opensourceideas.it
 
@@ -200,7 +223,7 @@ void loop()
     //we can now write the data on the Sd
     if(DataFile)
     {      
-      String data = String(millis()) + ",  " + tempString + ",  " + "bubbles"; //print the ACTUAL time elapsed that is much later than when we begin the conversion.
+      String data = String(millis()) + ",  " + tempString + ",  " + bubbles; //print the ACTUAL time elapsed that is much later than when we begin the conversion.
       DataFile.println(data);
       DataFile.close();
       String success = "Data at time " + String(millis()) + " written on SD card";
@@ -216,8 +239,11 @@ void loop()
       digitalWrite(GreenLed, LOW);
       return;
     }
-    bubbles = 0;
+    bubbles = 0; //after writing the data to the SD we set the bubble variable to 0 to begin a new time count
   }
+  //when not writing to the SD we wait for the bubbles and each time we see one we sum her to the bubble variable. 
+  //In this way we have a cumulative count until the variable is emptied every minute.
+
   else
   {
     int bubbleEvent = digitalRead(IRgate);
