@@ -54,6 +54,7 @@ void setup()
   pinMode(10, OUTPUT);
   pinMode(6, OUTPUT);
   pinMode(7, OUTPUT);
+  pinMode(0, INPUT);
   
   //check if the SD i ready to work and initialize the library
   if(!SD.begin(chipSelect))
