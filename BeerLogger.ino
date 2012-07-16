@@ -200,10 +200,10 @@ void loop()
     LowByte = temperature[0];
     HighByte = temperature[1];
     TReading = (HighByte << 8) + LowByte;
-    SignBit = TReading & 0x8000;  // test most sig bit
+    SignBit = TReading & 0x8000;  // test most significant bit
     if (SignBit) // negative
     {
-      TReading = (TReading ^ 0xffff) + 1; // 2's comp
+      TReading = (TReading ^ 0xffff) + 1; // 2's complement
     }
     Tc_100 = (6 * TReading) + TReading / 4;    // multiply by (100 * 0.0625) or 6.25
 
